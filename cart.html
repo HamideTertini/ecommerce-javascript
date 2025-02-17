@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cart</title>
+    <link rel="stylesheet" href="./css/output.css">
+</head>
+<body class="bg-gray-100">
+    <header class="bg-gray-800 text-white"></header>
+
+    <main class="py-12">
+        <div class="container mx-auto">
+            <h2 class="text-3xl font-bold mb-6 text-center">Your Cart</h2>
+            <div id="cart-container" class="bg-white p-6 rounded-lg shadow-md">
+                <!-- Cart Items -->
+                <div id="cart-items" class="space-y-4">
+                    <p class="text-gray-500 text-center">Your cart is empty.</p>
+                </div>
+
+                <!-- Cart Summary -->
+                <div id="cart-summary" class="mt-6 hidden">
+                    <div class="flex justify-between items-center border-t pt-4">
+                        <span class="text-lg font-semibold">Total:</span>
+                        <span id="cart-total" class="text-xl font-bold text-green-600">$0.00</span>
+                    </div>
+                    <button id="checkout-btn" class="bg-blue-500 text-white w-full py-3 mt-4 rounded-lg hover:bg-blue-600 transition">
+                        Proceed to Checkout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import Header from './components/Header.js';
+        const headerContainer = document.querySelector('header');
+        headerContainer.innerHTML = Header();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const cartItemsContainer = document.querySelector('#cart-items');
+            const cartSummary = document.querySelector('#cart-summary');
+            const cartTotal = document.querySelector('#cart-total');
+            const checkoutBtn = document.querySelector('#checkout-btn');
+
+            let cart = JSON.parse(localStorage.getItem('cart')) || [];
+            const user = JSON.parse(localStorage.getItem('loggedinuser')) || {};
+
+            function updateCartUI() {
+                if (cart.length === 0) {
+                    cartItemsContainer.innerHTML = '<p class="text-gray-500 text-center">Your cart is empty.</p>';
+                    cartSummary.classList.add('hidden');
+                } else {
+                    cartItemsContainer.innerHTML = cart.map((item, index) => `
+                        <div class="flex items-center justify-between border-b pb-4">
+                            <div class="flex items-center gap-4">
+                                <img src="https://via.placeholder.com/80" alt="${item.title}" class="w-16 h-16 object-cover rounded">
+                                <div>
+                                    <h3 class="font-bold">${item.title}</h3>
+                                    <p class="text-gray-500">Price: $${item.price}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button class="decrease-quantity bg-gray-200 text-gray-800 px-2 rounded" data-index="${index}">-</button>
+                                <span class="font-semibold">${item.quantity}</span>
+                                <button class="increase-quantity bg-gray-200 text-gray-800 px-2 rounded" data-index="${index}">+</button>
+                            </div>
+                            <span class="text-gray-600">$${(item.quantity * item.price).toFixed(2)}</span>
+                        </div>
+                    `).join('');
+
+                    const total = cart.reduce((sum, item) => sum + item.quantity * item.price, 0);
+                    cartTotal.textContent = `$${total.toFixed(2)}`;
+                    cartSummary.classList.remove('hidden');
+                }
+            }
+
+            function saveCart() {
+                localStorage.setItem('cart', JSON.stringify(cart));
+            }
+
+            cartItemsContainer.addEventListener('click', (e) => {
+                if (e.target.classList.contains('increase-quantity')) {
+                    const index = e.target.getAttribute('data-index');
+                    cart[index].quantity += 1;
+                    saveCart();
+                    updateCartUI();
+                } else if (e.target.classList.contains('decrease-quantity')) {
+                    const index = e.target.getAttribute('data-index');
+                    if (cart[index].quantity > 1) {
+                        cart[index].quantity -= 1;
+                    } else {
+                        cart.splice(index, 1);
+                    }
+                    saveCart();
+                    updateCartUI();
+                }
+            });
+            checkoutBtn.addEventListener('click', () => {
+    if (cart.length > 0 && user.email) {
+        let orders = JSON.parse(localStorage.getItem('orders')) || [];
+        const newOrder = {
+            user: user.email,
+            email: user.email,
+            items: cart,
+        };
+
+        orders.push(newOrder);
+        localStorage.setItem('orders', JSON.stringify(orders));
+        localStorage.removeItem('cart');
+        window.location.href = 'dashboard.html';
+    } else {
+        alert('Your cart is empty or you are not logged in.');
+    }
+});
+
+
+
+            updateCartUI();
+        });
+    </script>
+</body>
+</html>

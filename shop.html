@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shop</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <header class="bg-gray-800 text-white">
+    </header>
+    
+
+    <!-- Filters Section -->
+<section class="py-6 bg-gray-50 border-b">
+    <div class="container mx-auto flex flex-wrap gap-4 items-center">
+        <select id="category-filter" class="px-4 py-2 border border-gray-400 rounded-md w-full sm:w-auto">
+            <option value="">All Categories</option>
+            <option value="electronics">Electronics</option>
+            <option value="men's clothing">Men's Clothing</option>
+            <option value="women's clothing">Women's Clothing</option>
+            <option value="jewelery">Jewelry</option>
+        </select>
+        <select id="rating-filter" class="px-4 py-2 border border-gray-400 rounded-md w-full sm:w-auto">
+            <option value="">All Ratings</option>
+            <option value="4">4 Stars & Up</option>
+            <option value="3">3 Stars & Up</option>
+            <option value="2">2 Stars & Up</option>
+            <option value="1">1 Star & Up</option>
+        </select>
+        <input
+            type="search"
+            id="search"
+            placeholder="Search by title..."
+            class="w-full sm:w-1/2 px-4 py-2 border border-gray-400 rounded-md"
+        />
+        <select id="sort-options" class="px-4 py-2 border border-gray-400 rounded-md w-full sm:w-auto">
+            <option value="">Sort By</option>
+            <option value="price-asc">Price: Low to High</option>
+            <option value="price-desc">Price: High to Low</option>
+            <option value="rating-desc">Rating: High to Low</option>
+        </select>
+    </div>
+</section>
+
+
+    <!-- Product List Section -->
+    <main class="py-12">
+        <div class="container mx-auto">
+            <h2 class="text-center text-3xl mb-12">Shop Our Products</h2>
+            <div id="product-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6"></div>
+        </div>
+        <div id="product-list" class="grid grid-cols-4 gap-4"></div>
+<div id="pagination" class="flex justify-center mt-4"></div>
+    </main>
+
+    <!-- Modal for Product Details -->
+    <div id="product-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center">
+        <div class="bg-white w-11/12 md:w-2/3 lg:w-1/3 p-6 rounded-lg relative">
+            <button id="close-modal" class="absolute top-4 right-4 text-gray-500 text-2xl">&times;</button>
+            <img id="modal-image" src="" alt="" class="w-full h-48 object-cover mb-4">
+            <h3 id="modal-title" class="text-2xl font-bold mb-4"></h3>
+            <p id="modal-description" class="text-gray-700 mb-4"></p>
+            <p id="modal-price" class="text-lg font-semibold mb-4"></p>
+            <p id="modal-stock" class="text-sm"></p>
+        </div>
+    </div>
+    <script type="module">
+
+
+         import Header from './components/Header.js'
+         const header_container = document.querySelector('header')
+         header_container.innerHTML = Header()
+        // Funksion për të renderuar produktet
+        function renderProducts(products, container) {
+            container.innerHTML = '';
+            products.forEach(product => {
+                const inStock = product.rating.count > 0;
+                const productCard = `
+                    <div class="product-card border p-4 rounded-lg shadow-lg bg-white hover:shadow-2xl transition cursor-pointer" data-id="${product.id}">
+                        <img src="${product.image}" alt="${product.title}" class="w-full h-48 object-cover mb-4">
+                        <h3 class="text-lg font-bold text-center">${product.title}</h3>
+                        <p class="text-center text-gray-500 mt-2">$${product.price}</p>
+                        <p class="text-center text-${inStock ? 'green' : 'red'}-500 mt-2">
+                            ${inStock ? `In Stock: ${product.rating.count}` : 'Out of Stock'}
+                        </p>
+                        <button 
+                            class="add-to-cart bg-gray-700 text-white px-4 py-2 mt-4 w-full rounded hover:bg-blue-600 transition"
+                            data-id="${product.id}">
+                            Add to Cart
+                        </button>
+                    </div>
+                `;
+                container.innerHTML += productCard;
+            });
+        }
+        
+        // Funksion për të shtuar produktet në karrocë
+        function addToCart(productId, products) {
+            if (!productId) return;
+            
+            const product = products.find(p => p.id === parseInt(productId));
+            if (!product || product.rating.count <= 0) {
+                alert('This product is out of stock!');
+                return;
+            }
+        
+            let cart = JSON.parse(localStorage.getItem('cart')) || [];
+            const existingProduct = cart.find(item => item.id === product.id);
+        
+            if (existingProduct) {
+                existingProduct.quantity++;
+            } else {
+                cart.push({
+                    id: product.id,
+                    title: product.title,
+                    price: product.price,
+                    quantity: 1
+                });
+            }
+        
+            localStorage.setItem('cart', JSON.stringify(cart));
+            alert('Product added to cart!');
+        }
+        
+        // Funksion për të marrë detajet e produktit
+        async function fetchProductDetails(productId) {
+            try {
+                const response = await fetch(`https://fakestoreapi.com/products/${productId}`);
+                if (!response.ok) throw new Error('Failed to fetch product details.');
+                return await response.json();
+            } catch (error) {
+                console.error(error);
+                alert('Unable to fetch product details.');
+            }
+        }
+        
+        // Funksion për të treguar modalin e detajeve të produktit
+        function showProductDetails(product) {
+            const modal = document.getElementById('product-modal');
+            document.getElementById('modal-image').src = product.image;
+            document.getElementById('modal-title').textContent = product.title;
+            document.getElementById('modal-description').textContent = product.description;
+            document.getElementById('modal-price').textContent = `$${product.price}`;
+            document.getElementById('modal-stock').textContent = `Stock: ${product.rating.count}`;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+        
+        // Funksion për të mbyllur modalin
+        function closeModal() {
+            const modal = document.getElementById('product-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+        
+        // Funksion për të filtruar dhe sortuar produktet
+        function filterAndSortProducts(products, filters) {
+            let filteredProducts = [...products];
+        
+            if (filters.category) {
+                filteredProducts = filteredProducts.filter(product => product.category === filters.category);
+            }
+            if (filters.rating) {
+                filteredProducts = filteredProducts.filter(product => product.rating.rate >= filters.rating);
+            }
+            if (filters.query) {
+                filteredProducts = filteredProducts.filter(product =>
+                    product.title.toLowerCase().includes(filters.query.toLowerCase())
+                );
+            }
+            if (filters.sortBy) {
+                if (filters.sortBy === 'price-asc') {
+                    filteredProducts.sort((a, b) => a.price - b.price);
+                } else if (filters.sortBy === 'price-desc') {
+                    filteredProducts.sort((a, b) => b.price - a.price);
+                } else if (filters.sortBy === 'rating-desc') {
+                    filteredProducts.sort((a, b) => b.rating.rate - a.rating.rate);
+                }
+            }
+        
+            return filteredProducts;
+        }
+        
+        // Ngarkimi fillestar i produkteve dhe filtrave
+        async function init() {
+            const productList = document.getElementById('product-list');
+            const products = await fetch('https://fakestoreapi.com/products').then(res => res.json());
+            renderProducts(products, productList);
+        
+            let currentFilters = { category: null, rating: null, query: null, sortBy: null };
+        
+            // Event për filtrat dhe renditjen
+            document.getElementById('category-filter').addEventListener('change', (e) => {
+                currentFilters.category = e.target.value;
+                applyFiltersAndRender();
+            });
+        
+            document.getElementById('rating-filter').addEventListener('change', (e) => {
+                currentFilters.rating = parseInt(e.target.value) || null;
+                applyFiltersAndRender();
+            });
+        
+            document.getElementById('search').addEventListener('input', (e) => {
+                currentFilters.query = e.target.value;
+                applyFiltersAndRender();
+            });
+        
+            document.getElementById('sort-options').addEventListener('change', (e) => {
+                currentFilters.sortBy = e.target.value;
+                applyFiltersAndRender();
+            });
+        
+            function applyFiltersAndRender() {
+                const filtered = filterAndSortProducts(products, currentFilters);
+                renderProducts(filtered, productList);
+            }
+        
+            // Event Listener për klikimet e produktit dhe shtimin në karrocë
+            productList.addEventListener('click', async (event) => {
+                const productId = event.target.closest('.product-card')?.dataset.id;
+        
+                if (event.target.classList.contains('add-to-cart')) {
+                    addToCart(productId, products);
+                } else if (productId) {
+                    const product = await fetchProductDetails(productId);
+                    if (product) showProductDetails(product);
+                }
+            });
+        
+            // Event për modalin
+            document.getElementById('close-modal').addEventListener('click', closeModal);
+            document.getElementById('product-modal').addEventListener('click', (event) => {
+                if (event.target === event.currentTarget) closeModal();
+            });
+        }
+        
+        // Inicializimi i aplikacionit
+        init();
+       
+      
+// Funksion për të renditur faqet me produkte
+function renderPaginatedProducts(products, container, page, itemsPerPage) {
+    container.innerHTML = '';
+    const startIndex = (page - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedProducts = products.slice(startIndex, endIndex);
+
+    renderProducts(paginatedProducts, container);
+
+    // Gjenerimi i butonave të paginimit
+    generatePaginationButtons(products.length, itemsPerPage, page);
+}
+
+// Funksion për të krijuar butonat e paginimit
+function generatePaginationButtons(totalItems, itemsPerPage, currentPage) {
+    const paginationContainer = document.getElementById('pagination');
+    paginationContainer.innerHTML = '';
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+    for (let i = 1; i <= totalPages; i++) {
+        const button = document.createElement('button');
+        button.textContent = i;
+        button.className = `pagination-button px-4 py-2 m-1 rounded ${i === currentPage ? 'bg-blue-500 text-white' : 'bg-gray-200'}`;
+        button.addEventListener('click', () => {
+            renderPaginatedProducts(window.products, document.getElementById('product-list'), i, itemsPerPage);
+        });
+        paginationContainer.appendChild(button);
+    }
+}
+
+// Ngarkimi fillestar i produkteve dhe paginimi
+async function initPagination() {
+    const productList = document.getElementById('product-list');
+    window.products = await fetch('https://fakestoreapi.com/products').then(res => res.json());
+
+    const itemsPerPage = 8;  // Numri i produkteve për faqe
+    renderPaginatedProducts(window.products, productList, 1, itemsPerPage);
+}
+
+// Inicializimi
+initPagination();
+</script>
+
+
+ 
+</body>
+</html>

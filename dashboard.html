@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-300 h-screen flex flex-col">
+    <header class="bg-gray-800 text-white"></header>
+
+    <main class="flex-grow p-6 container mx-auto">
+        <h1 class="text-3xl font-bold mb-6">Dashboard</h1>
+        <div class="bg-white p-6 rounded-lg shadow-xl">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Your Orders</h2>
+            <table class="table-auto w-full border-collapse border border-gray-200">
+                <thead>
+                    <tr class="bg-gray-100">
+                        <th class="border border-gray-300 px-4 py-2">Order ID</th>
+                        <th class="border border-gray-300 px-4 py-2">User</th>
+                        <th class="border border-gray-300 px-4 py-2">Email</th>
+                        <th class="border border-gray-300 px-4 py-2">Delivery Address</th>
+                        <th class="border border-gray-300 px-4 py-2">Items</th>
+                        <th class="border border-gray-300 px-4 py-2">Total</th>
+                    </tr>
+                </thead>
+                <tbody id="orders-table">
+                    <!-- Orders will be populated here dynamically -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script type="module">
+        import Header from './components/Header.js';
+
+        // Vendos header-in
+        const headerContainer = document.querySelector('header');
+        headerContainer.innerHTML = Header();
+
+        // Kontrollo statusin e përdoruesit
+        const user = JSON.parse(localStorage.getItem('loggedinuser'));
+        if (!user || !user.isloggedin) {
+            window.location.href = 'login.html'; // Ridrejto në login
+        }
+
+        // Log Out Button
+        const logoutButton = document.querySelector('#logout');
+        if (logoutButton) {
+            logoutButton.addEventListener('click', () => {
+                localStorage.removeItem('loggedinuser');
+                window.location.href = 'index.html';
+            });
+        }
+
+        // Merr porositë nga localStorage për përdoruesin aktual
+        const orders = JSON.parse(localStorage.getItem('orders')) || [];
+        const userOrders = orders.filter(order => order.email === user.email);
+        const ordersTable = document.querySelector('#orders-table');
+
+        if (userOrders.length === 0) {
+            ordersTable.innerHTML = `<tr><td colspan="6" class="text-center text-gray-500 py-4">No orders found.</td></tr>`;
+        } else {
+            userOrders.forEach((order, index) => {
+                const orderTotal = order.items.reduce((total, item) => total + (item.quantity * item.price), 0);
+                const itemsDetails = order.items.map(item => `
+                    <div class="mb-2">
+                        <span class="font-semibold">${item.title}</span>: 
+                        ${item.quantity} x $${item.price.toFixed(2)} = 
+                        $${(item.quantity * item.price).toFixed(2)}
+                    </div>
+                `).join('');
+
+                const orderRow = `
+                    <tr>
+                        <td class="border border-gray-300 px-4 py-2">Order #${index + 1}</td>
+                        <td class="border border-gray-300 px-4 py-2">${order.user}</td>
+                        <td class="border border-gray-300 px-4 py-2">${order.email}</td>
+                        <td class="border border-gray-300 px-4 py-2">N/A</td> <!-- Vend për adresën -->
+                        <td class="border border-gray-300 px-4 py-2">${itemsDetails}</td>
+                        <td class="border border-gray-300 px-4 py-2">$${orderTotal.toFixed(2)}</td>
+                    </tr>
+                `;
+                ordersTable.innerHTML += orderRow;
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-300 h-screen flex flex-col justify-between">
+
+    <header class="bg-gray-800 text-white">
+    </header>
+    <div class="container mx-auto flex items-center justify-between">
+           
+            <h1 class="text-4xl font-extrabold tracking-wide"> </h1>
+           
+
+   <!-- Login Form Section -->
+   <div class="container mx-auto flex-grow flex justify-center items-center p-6">
+    <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
+        <h2 class="text-2xl font-semibold text-gray-700 text-center mb-6">Login to Your Account</h2>
+        <form method="POST" id="login" class="space-y-6">
+            <div>
+                <label for="email" class="block text-gray-600 font-medium">Email Address</label>
+                <input id="email" name="email" type="email" required 
+                       class="w-full px-4 py-2 mt-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label for="password" class="block text-gray-600 font-medium">Password</label>
+                <input id="password" name="password" type="password" required 
+                       class="w-full px-4 py-2 mt-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div class="flex justify-center mt-4">
+                <button type="submit" 
+                        class="w-full py-2 px-4 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    Login
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+
+   
+
+<script type="module">
+    import Header from './components/Header.js';
+    const header_container = document.querySelector('header');
+    header_container.innerHTML = Header();
+    
+    import { getUsers } from './helpers/users.js';
+    
+    const form = document.querySelector('#login');
+    form.addEventListener('submit', e => {
+        e.preventDefault();
+    
+        const data = e.target.elements;
+        const users = getUsers();
+    
+        // Kontrollo nëse ekziston përdoruesi
+        const user = users.find(user => user.email === data.email.value && user.password === data.password.value);
+    
+        if (user) {
+            // Ruaj të dhënat e përdoruesit të identifikuar në localStorage
+            localStorage.setItem('loggedinuser', JSON.stringify({
+                email: user.email,
+                isloggedin: true
+            }));
+    
+            // Ridrejto përdoruesin në dashboard
+            window.location.href = 'dashboard.html';
+        } else {
+            alert('Email ose fjalëkalim i pasaktë.');
+        }
+    });
+    </script>
+    
+    
+</body>
+</html>
